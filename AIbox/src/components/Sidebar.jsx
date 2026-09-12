@@ -20,7 +20,7 @@ const Sidebar = ({ isMenuOpen, setIsMenuOpen }) => {
   }
 
   const deleteChat = async (e, chatId) => {
-    e.stopPropagation();
+    e.stopPropagation(); //stops event from moving to parent
 
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this chat?"
@@ -118,17 +118,11 @@ ${isMenuOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 md:m-4`
 
       <div>
         {chats
-          .filter((chat) =>
-            chat.messages[0]
-              ? chat.messages[0].content
-                .toLowerCase()
-                .includes(search.toLowerCase())
+          .filter((chat) =>chat.messages[0] ? chat.messages[0].content.toLowerCase().includes(search.toLowerCase()) //this parts searches chat
               : chat.name.toLowerCase().includes(search.toLowerCase())
           )
           .map((chat) => (
-            <div
-              key={chat._id}
-              onClick={() => {
+            <div key={chat._id} onClick={() => {
                 setSelectedChat(chat);
                 navigate("/");
                 setIsMenuOpen(false); // optional, closes sidebar on mobile

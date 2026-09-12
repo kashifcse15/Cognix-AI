@@ -52,20 +52,20 @@ export const getUser=async (req,res)=>{ //API to get User data
     }
 }
 
-//API tp get Published Images
+//API to get Published Images
 export const getPublishedImages=async(req,res)=>{
     try {
         const publishedImagesMessages=await Chat.aggregate([
-            {$unwind :"$messages"},
+            {$unwind :"$messages"}, //breaks the array
             {
-                $match :{
+                $match :{  //mongodb checks every msg where this two are true
                 "messages.isImage":true,
                 "messages.isPublished":true
             }
         },
         {
-            $project:{
-                _id:0,
+            $project:{  //we dont need everything just this 3 , (normally mongodb send id also)
+                _id:0, // but we dont need id
                 imageUrl: "$messages.content",
                 userName: "$userName"
             }

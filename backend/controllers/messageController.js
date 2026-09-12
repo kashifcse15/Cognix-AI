@@ -37,7 +37,7 @@ console.log("chat:", chat);
         console.time("AI Response");
         
         const response = await openai.chat.completions.create({
-            model: "gemini-2.5-flash",
+            model: "openai/gpt-oss-120b",
             messages: [
                 {
                     role: "user",
