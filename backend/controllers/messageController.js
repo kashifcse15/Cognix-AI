@@ -1,4 +1,3 @@
-import imagekit from "../configs/imagekit.js";
 import Chat from "../models/Chat.js";
 import User from "../models/User.js";
 import axios from 'axios';
@@ -6,6 +5,8 @@ import openai from "../configs/openai.js";
 
 export const textMessageController = async (req, res) => { // MESSAGE BY AI
     try {
+        console.log("Groq key exists:", !!process.env.GROQ_API_KEY);
+console.log("Groq key prefix:", process.env.GROQ_API_KEY?.slice(0, 4));
         const userId = req.user._id;
         if (req.user.credits < 1) {
             return res.json({ success: false, message: "Out of Credits" });
@@ -80,9 +81,11 @@ console.log("chat:", chat);
 
     }
     catch (error) {
-        console.error("TEXT ERROR:", error);
-        console.error("ERROR RESPONSE:", error.response?.data);
-    
+      console.error("TEXT ERROR:", error);
+    console.error("STATUS:", error.status);
+    console.error("MESSAGE:", error.message);
+    console.error("ERROR:", error.error);
+    console.error("HEADERS:", error.headers);
         res.json({
             success: false,
             message: error.message
@@ -90,15 +93,33 @@ console.log("chat:", chat);
     }
 }
 
-//Image Generation
+// Image Generation
 export const imageMessageController = async (req, res) => {
     try {
         const userId = req.user._id;
+
         if (req.user.credits < 2) {
-            return res.json({ success: false, message: "Out of Credits" });
+            return res.json({
+                success: false,
+                message: "Out of Credits"
+            });
         }
+
         const { prompt, chatId, isPublished } = req.body;
-        const chat = await Chat.findOne({ userId, _id: chatId });
+
+        const chat = await Chat.findOne({
+            userId,
+            _id: chatId
+        });
+
+        if (!chat) {
+            return res.json({
+                success: false,
+                message: "Chat not found"
+            });
+        }
+
+        // Save user's prompt
         chat.messages.push({
             role: "user",
             content: prompt,
@@ -106,39 +127,65 @@ export const imageMessageController = async (req, res) => {
             isImage: false
         });
 
+        // Encode prompt for URL
         const encodedPrompt = encodeURIComponent(prompt);
+
+        // Pollinations image URL
         const generateImageURL =
-        `${process.env.IMAGEKIT_URL_ENDPOINT}/ik-genimg-prompt-${encodedPrompt}/aibox/${Date.now()}.png?tr=w-800,h-800`;
+            `https://gen.pollinations.ai/image/${encodedPrompt}?model=flux`;
 
-        const aiImageResponse = await axios.get(generateImageURL, { responseType: "arraybuffer" });
+        console.log("Generating image...");
+        console.log("Prompt:", prompt);
 
-        const base64Image = `data:image/png;base64,${Buffer.from(aiImageResponse.data, "binary").toString('base64')}`;
+        // Generate image
+        const aiImageResponse = await axios.get(
+            generateImageURL,
+            {
+                responseType: "arraybuffer",
+                headers: {
+                    Authorization: `Bearer ${process.env.POLLINATIONS_API_KEY}`
+                }
+            }
+        );
 
-        const uploadResponse = await imagekit.upload({
-            file: base64Image,
-            fileName: `${Date.now()}.png`,
-            folder: "aibox"
-        })
+        // Convert generated image to Base64
+        const base64Image =
+            `data:image/jpeg;base64,${Buffer.from(
+                aiImageResponse.data
+            ).toString("base64")}`;
+
         const reply = {
             role: "assistant",
-            content: uploadResponse.url,
+            content: base64Image,
             timestamp: Date.now(),
             isImage: true,
             isPublished
-        }
-        res.json({ success: true, reply });
+        };
+
         chat.messages.push(reply);
+
         await chat.save();
-        await User.updateOne({ _id: userId }, { $inc: { credits: -2 } });
+
+        await User.updateOne(
+            { _id: userId },
+            { $inc: { credits: -2 } }
+        );
+
+        res.json({
+            success: true,
+            reply
+        });
 
     } catch (error) {
         console.error("IMAGE ERROR:", error);
+        console.error("STATUS:", error.response?.status);
         console.error("RESPONSE:", error.response?.data);
-    
+        console.error("MESSAGE:", error.message);
+
         res.json({
             success: false,
             message: error.message
         });
     }
-}
+};
 
