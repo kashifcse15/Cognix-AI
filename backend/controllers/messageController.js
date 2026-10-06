@@ -5,38 +5,30 @@ import openai from "../configs/openai.js";
 
 export const textMessageController = async (req, res) => { // MESSAGE BY AI
     try {
-        console.log("Groq key exists:", !!process.env.GROQ_API_KEY);
-console.log("Groq key prefix:", process.env.GROQ_API_KEY?.slice(0, 4));
         const userId = req.user._id;
+
         if (req.user.credits < 1) {
             return res.json({ success: false, message: "Out of Credits" });
         }
 
         const { chatId, prompt } = req.body;
 
-        console.log("userId:", userId);
-console.log("chatId:", chatId);
+        const chat = await Chat.findOne({ userId, _id: chatId });
 
-
-const chat = await Chat.findOne({ userId, _id: chatId });
-
-console.log("chat:", chat);
         if (!chat) {
             return res.json({
                 success: false,
                 message: "Chat not found"
             });
         }
-        
+
         chat.messages.push({
             role: "user",
             content: prompt,
             timestamp: Date.now(),
             isImage: false
         });
-        
-        console.time("AI Response");
-        
+
         const response = await openai.chat.completions.create({
             model: "openai/gpt-oss-120b",
             messages: [
@@ -46,11 +38,11 @@ console.log("chat:", chat);
                 },
             ],
         });
-        
+
         console.timeEnd("AI Response");
-        
+
         console.log("AI Response:", JSON.stringify(response, null, 2));
-        
+
         const { choices } = response;
 
         if (!choices || choices.length === 0) {
@@ -59,21 +51,21 @@ console.log("chat:", chat);
                 message: "No response received from AI"
             });
         }
-        
-        const reply = {
+
+        const reply = { // Save AI's reply and add it to the chat
             ...choices[0].message,
             timestamp: Date.now(),
             isImage: false
         };
-        
+
         chat.messages.push(reply);
         await chat.save();
-        
+
         await User.updateOne(
             { _id: userId },
             { $inc: { credits: -1 } }
         );
-        
+
         res.json({
             success: true,
             reply
@@ -81,11 +73,11 @@ console.log("chat:", chat);
 
     }
     catch (error) {
-      console.error("TEXT ERROR:", error);
-    console.error("STATUS:", error.status);
-    console.error("MESSAGE:", error.message);
-    console.error("ERROR:", error.error);
-    console.error("HEADERS:", error.headers);
+        console.error("TEXT ERROR:", error);
+        console.error("STATUS:", error.status);
+        console.error("MESSAGE:", error.message);
+        console.error("ERROR:", error.error);
+        console.error("HEADERS:", error.headers);
         res.json({
             success: false,
             message: error.message

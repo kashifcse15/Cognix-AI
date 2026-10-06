@@ -209,7 +209,7 @@ border border-gray-200 dark:border-white hover:bg-gray-50 dark:hover:bg-[#222] t
 
 
       </div>
-      {/* X BUTTON FOR MOBILE      */}
+      {/* X BUTTON FOR MOBILE*/}
       <button onClick={() => setIsMenuOpen(false)} className='md:hidden absolute top-3 right-3 w-5 h-5 cursor-pointer'>
         <LuX className='text-3xl text-red-500' />
       </button>
