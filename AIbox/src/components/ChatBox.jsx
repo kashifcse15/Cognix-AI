@@ -8,34 +8,57 @@ import toast from "react-hot-toast";
 
 const ChatBox = () => {
   const { selectedChat, theme, user, axios, token, setUser } = useAppContext();
+
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [mode, setMode] = useState("text");
   const [isPublished, setIsPublished] = useState(false);
+
   const containerRef = useRef(null);
 
   const onSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!user) {
+      return toast("Login to Send Message");
+    }
+
+    if (!prompt.trim()) return;
+
     try {
-      e.preventDefault();
-      if (!user) return toast("Login to Send Message");
       setLoading(true);
+
       const promptCopy = prompt;
       setPrompt("");
 
       setMessages((prev) => [
         ...prev,
-        { role: "user", content: prompt, timestamp: Date.now(), isImage: false }
+        {
+          role: "user",
+          content: promptCopy,
+          timestamp: Date.now(),
+          isImage: false
+        }
       ]);
 
       const { data } = await axios.post(
         `/api/message/${mode}`,
-        { chatId: selectedChat._id, prompt, isPublished },
-        { headers: { Authorization: token } }
+        {
+          chatId: selectedChat._id,
+          prompt: promptCopy,
+          isPublished
+        },
+        {
+          headers: {
+            Authorization: token
+          }
+        }
       );
 
       if (data.success) {
         setMessages((prev) => [...prev, data.reply]);
+
         setUser((prev) => ({
           ...prev,
           credits: prev.credits - (mode === "image" ? 2 : 1)
@@ -66,13 +89,23 @@ const ChatBox = () => {
 
   return (
     <div className="flex flex-1 h-full min-h-0 min-w-0 max-w-full flex-col p-4 m-5 md:p-10 xl:px-30 max-md:pt-14 2xl:pr-40">
-      <div ref={containerRef} className="flex-1 min-h-0 min-w-0 max-w-full mb-3 overflow-y-auto overflow-x-hidden pb-2">
+
+      <div
+        ref={containerRef}
+        className="flex-1 min-h-0 min-w-0 max-w-full overflow-y-auto overflow-x-hidden pb-24 md:pb-28"
+      >
         {messages.length === 0 && (
           <div className="h-full w-full flex flex-col items-center justify-center px-4">
-            <img src={theme === "dark" ? darklogo : lightlogo} alt="Logo" className="w-full max-w-56 sm:max-w-68" />
+            <img
+              src={theme === "dark" ? darklogo : lightlogo}
+              alt="Logo"
+              className="w-full max-w-56 sm:max-w-68"
+            />
+
             <p className="mt-5 text-2xl sm:text-3xl text-center text-gray-400 dark:text-white">
               Welcome {user?.name} 🚀
             </p>
+
             <p className="mt-5 text-2xl sm:text-3xl text-center text-gray-400 dark:text-white">
               How Can i assist ?
             </p>
@@ -93,49 +126,52 @@ const ChatBox = () => {
       </div>
 
       {mode === "image" && (
-        <label className="inline-flex items-center justify-center gap-2 mb-3 text-sm mx-auto max-w-full">
-          <p className="text-sm text-center">Publish generated image to Community</p>
+        <label className="fixed bottom-[76px] left-1/2 z-50 -translate-x-1/2 flex items-center justify-center gap-2 text-sm whitespace-nowrap">
+          <span>Publish generated image to Community</span>
           <input
             type="checkbox"
-            className="form-checkbox h-5 w-5 text-green-600 shrink-0"
+            className="h-5 w-5 text-green-600 shrink-0"
             checked={isPublished}
             onChange={(e) => setIsPublished(e.target.checked)}
           />
         </label>
       )}
 
-      <div className="sticky bottom-0 z-20 w-full bg-white dark:bg-[#0B120E] pt-2 pb-[env(safe-area-inset-bottom)]">
-        <form
-          onSubmit={onSubmit}
-          className="w-full max-w-2xl min-w-0 mx-auto p-2 pl-3 md:p-3 md:pl-4 flex items-center gap-2 md:gap-4 bg-green-100/20 dark:bg-[#0F1A14] border border-green-300 dark:border-[#1F4D36] rounded-full"
+      <form
+        onSubmit={onSubmit}
+        className="fixed bottom-3 left-1/2 z-50 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-2xl p-2 pl-3 md:p-3 md:pl-4 flex items-center gap-2 md:gap-4 bg-green-100/20 dark:bg-[#0F1A14] border border-green-300 dark:border-[#1F4D36] rounded-full"
+      >
+        <select
+          onChange={(e) => setMode(e.target.value)}
+          value={mode}
+          className="shrink-0 text-sm px-2 md:px-3 py-2 rounded-lg bg-green-100/30 dark:bg-[#13231B] border border-green-300 dark:border-[#1F4D36] text-gray-700 dark:text-green-300 outline-none cursor-pointer hover:border-green-500 transition"
         >
-          <select
-            onChange={(e) => setMode(e.target.value)}
-            value={mode}
-            className="shrink-0 text-sm px-2 md:px-3 py-2 rounded-lg bg-green-100/30 dark:bg-[#13231B] border border-green-300 dark:border-[#1F4D36] text-gray-700 dark:text-green-300 outline-none cursor-pointer hover:border-green-500 transition"
-          >
-            <option className="bg-[#13231B]" value="text">Text</option>
-            <option className="bg-[#13231B]" value="image">Image</option>
-          </select>
+          <option className="bg-[#13231B]" value="text">
+            Text
+          </option>
 
-          <input
-            onChange={(e) => setPrompt(e.target.value)}
-            value={prompt}
-            type="text"
-            placeholder="Type your Prompt here..."
-            className="flex-1 min-w-0 w-full text-sm outline-none bg-transparent text-black dark:text-white placeholder:text-gray-400 dark:placeholder:text-green-200/50"
-            required
-          />
+          <option className="bg-[#13231B]" value="image">
+            Image
+          </option>
+        </select>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="shrink-0 p-2 rounded-full bg-[#1F4D36] hover:bg-[#2A6A4A] transition disabled:opacity-60"
-          >
-            <LuSend className="w-5 h-5 text-green-200" />
-          </button>
-        </form>
-      </div>
+        <input
+          onChange={(e) => setPrompt(e.target.value)}
+          value={prompt}
+          type="text"
+          placeholder="Type your Prompt here..."
+          className="flex-1 min-w-0 w-full text-sm outline-none bg-transparent text-black dark:text-white placeholder:text-gray-400 dark:placeholder:text-green-200/50"
+          required
+        />
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="shrink-0 p-2 rounded-full bg-[#1F4D36] hover:bg-[#2A6A4A] transition disabled:opacity-60"
+        >
+          <LuSend className="w-5 h-5 text-green-200" />
+        </button>
+      </form>
     </div>
   );
 };
