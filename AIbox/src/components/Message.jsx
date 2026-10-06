@@ -30,13 +30,13 @@ const Message = ({ message }) => {
               {message.isImage ? (
                 <img src={message.content} alt="" className="w-full max-w-md mt-2 rounded-md object-contain" />
               ) : (
-                <div className="text-sm text-black dark:text-green-100 reset-tw min-w-0 max-w-full break-words [overflow-wrap:anywhere]">
+                <div className="text-sm text-black dark:text-green-100 reset-tw min-w-0 max-w-full overflow-hidden">
                   <Markdown
                     remarkPlugins={[remarkGfm]}
                     components={{
                       table: ({ children }) => (
-                        <div className="w-full max-w-full overflow-x-auto my-4">
-                          <table className="min-w-max border-collapse">{children}</table>
+                        <div className="w-full min-w-0 max-w-full overflow-x-auto my-4">
+                          <table className="min-w-max border-collapse text-sm">{children}</table>
                         </div>
                       ),
                       th: ({ children }) => (
