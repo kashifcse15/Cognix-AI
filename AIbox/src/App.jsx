@@ -31,17 +31,21 @@ const App = () => { // gradient
         dark:text-white'>
                     <div className="w-full h-screen overflow-hidden dark:bg-linear-to-b from-[#000000] to-[#000000] dark:text-white">
                         <div className="flex h-screen w-full min-w-0 overflow-hidden">
-                            <Sidebar
-                                isMenuOpen={isMenuOpen}
-                                setIsMenuOpen={setIsMenuOpen}
-                            />
 
-                            <Routes>
-                                <Route path="/" element={<ChatBox />} />
-                                <Route path="/credits" element={<Credits />} />
-                                <Route path="/community" element={<Community />} />
-                            </Routes>
-                        </div>
+    <Sidebar
+        isMenuOpen={isMenuOpen}
+        setIsMenuOpen={setIsMenuOpen}
+    />
+
+    <div className="flex-1 min-w-0 w-full">
+        <Routes>
+            <Route path="/" element={<ChatBox />} />
+            <Route path="/credits" element={<Credits />} />
+            <Route path="/community" element={<Community />} />
+        </Routes>
+    </div>
+
+</div>
                     </div>
                 </div>
             ) : (
